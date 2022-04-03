@@ -2,9 +2,8 @@
 // Licensed under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
-var objtools = require('./index');
-var XError = require('xerror');
-var _ = require('lodash');
+import * as objtools from './index.js';
+import _ from 'lodash';
 
 /**
  * This class represents a mask, or whitelist, of fields on an object. Such
@@ -32,9 +31,10 @@ var _ = require('lodash');
  * @constructor
  * @param {Object} mask - The data for the mask
  */
-class ObjectMask {
+export class ObjectMask {
+	mask: any;
 
-	constructor(mask) {
+	constructor(mask: any) {
 		this.mask = underscorizeArrays(_.cloneDeep(mask));
 		Object.defineProperty(this, '_isObjectMask', { value: true });
 	}
@@ -47,9 +47,9 @@ class ObjectMask {
 	 * @param {String[]} fields - Array of fields to include
 	 * @return {ObjectMask} - The created mask
 	 */
-	static createMaskFromFieldList(fields) {
-		var ret = {};
-		var field;
+	static createMaskFromFieldList(fields: string[]): ObjectMask {
+		let ret = {};
+		let field: string;
 		// We sort fields by length, long to short, to avoid more specific fields clobbering
 		// less specific fields.
 		fields = fields.slice(0).sort((a, b) => b.length - a.length);
@@ -69,17 +69,14 @@ class ObjectMask {
 	 * @param {ObjectMask|Object} mask2...
 	 * @return {ObjectMask} - The result of adding together the component masks
 	 */
-	static addMasks() {
-		var resultMask = false;
-		var curArg;
-		var argIdx;
-		for (argIdx = 0; argIdx < arguments.length; argIdx++) {
-			curArg = arguments[argIdx];
+	static addMasks(...masks: any[]): ObjectMask {
+		let resultMask = false;
+		for (let curArg of masks) {
 			if (ObjectMask.isObjectMask(curArg)) {
 				curArg = curArg.toObject();
 			}
 			resultMask = addMask(resultMask, curArg);
-			if (resultMask === true) return true;
+			if (resultMask === true) return new ObjectMask(true);
 		}
 		return new ObjectMask(resultMask || false);
 	}
@@ -94,7 +91,7 @@ class ObjectMask {
 	 * @param {ObjectMask|Object} sub - the subtrahend
 	 * @return {ObjectMask} - The result of subtracting the second mask from the first
 	 */
-	static subtractMasks(min, sub) {
+	static subtractMasks(min: any, sub: any): ObjectMask {
 		const mask = (ObjectMask.isObjectMask(min)) ? min.clone().toObject() : objtools.deepCopy(min);
 		return new ObjectMask(mask).subtractMask(sub);
 	}
@@ -103,10 +100,10 @@ class ObjectMask {
 	 * Inverts a mask. The resulting mask disallows all fields previously allowed,
 	 * and allows all fields previously disallowed.
 	 * @static
-	 * @param {ObjectMask} - the mask to invert
+	 * @param {ObjectMask} mask - the mask to invert
 	 * @returns {ObjectMask} - the inverted mask
 	 */
-	static invertMask(mask) {
+	static invertMask(mask: any): ObjectMask {
 		if (ObjectMask.isObjectMask(mask)) mask = mask.mask;
 		return new ObjectMask(invert(mask));
 	}
@@ -118,7 +115,7 @@ class ObjectMask {
 	 * @param {Object} obj - the object to determine if is an ObjectMask
 	 * @return {Boolean} true if obj is an ObjectMask, false otherwise
 	 */
-	static isObjectMask(obj) {
+	static isObjectMask(obj: any): boolean {
 		return !!(obj && obj._isObjectMask);
 	}
 
@@ -126,11 +123,11 @@ class ObjectMask {
 	 * Subtracts a mask
 	 *
 	 * @method subtractMask
-	 * @throws {XError} throws on (deep) attempt to subtract non-boolean scalars
+	 * @throws {Error} throws on (deep) attempt to subtract non-boolean scalars
 	 * @param {ObjectMask|Object} mask - the mask to subtract
 	 * @return {ObjectMask} - returns new mask
 	 */
-	subtractMask(mask) {
+	subtractMask(mask: any): ObjectMask {
 		this.mask = subtract(this.mask, ObjectMask.isObjectMask(mask) ? mask.mask : mask);
 		return this;
 	}
@@ -142,7 +139,7 @@ class ObjectMask {
 	 * @param {String} path - the dotted path to the field to add
 	 * @return {Object} - returns self
 	 */
-	addField(path) {
+	addField(path: string): ObjectMask {
 		if (!this.checkFields(objtools.setPath({}, path, true))) {
 			objtools.setPath(this.mask, path, true);
 		}
@@ -154,13 +151,13 @@ class ObjectMask {
 	 *
 	 * @method removeField
 	 * @param {String} path - the dotted path to the field to remove
-	 * @throws {XError} on attempt to remove wildcard
+	 * @throws {Error} on attempt to remove wildcard
 	 * @return {Object} - returns self
 	 */
-	removeField(path) {
-		var submask, subpaths, nextSubpath, nextSubmask;
+	removeField(path: string): ObjectMask {
+		let submask, subpaths, nextSubpath, nextSubmask;
 		if (path === '_' || path.slice(-2) === '._') {
-			throw new XError(XError.INVALID_ARGUMENT, 'Attempt to remove wildcard');
+			throw new Error('Attempt to remove wildcard');
 		} else if (this.checkFields(objtools.setPath({}, path, true))) {
 			submask = this.mask;
 			subpaths = path.split('.');
@@ -197,7 +194,7 @@ class ObjectMask {
 	 * the returned object may still contain references to the original object.
 	 * Fields that are not masked out are copied by reference.
 	 */
-	filterObject(obj, maskedOutHook) {
+	filterObject(obj: any, maskedOutHook: (path: string) => void = null): any {
 		return filterDeep(obj, this.mask, '', maskedOutHook);
 	}
 
@@ -208,8 +205,8 @@ class ObjectMask {
 	 * @param {String} path - Dot-separated path to submask to fetch
 	 * @return {ObjectMask} - Mask component corresponding to the path
 	 */
-	getSubMask(path) {
-		var key, mask = this.mask, subpaths = path.split('.');
+	getSubMask(path: string): ObjectMask {
+		let key, mask = this.mask, subpaths = path.split('.');
 		while (subpaths.length && !objtools.isScalar(mask)) {
 			key = subpaths.shift();
 			mask = key in mask ? mask[key] : mask._;
@@ -224,7 +221,7 @@ class ObjectMask {
 	 * @param {String} path - Dot-separated path
 	 * @return {Boolean} - Whether or not the given path is allowed
 	 */
-	checkPath(path) {
+	checkPath(path: string): boolean {
 		return this.getSubMask(path).mask === true;
 	}
 
@@ -234,7 +231,7 @@ class ObjectMask {
 	 * @method clone
 	 * @return {ObjectMask}
 	 */
-	clone() {
+	clone(): ObjectMask {
 		return new ObjectMask(objtools.deepCopy(this.mask));
 	}
 
@@ -244,7 +241,7 @@ class ObjectMask {
 	 * @method toObject
 	 * @return {Object} - Object representation of this mask
 	 */
-	toObject() {
+	toObject(): any {
 		return this.mask;
 	}
 
@@ -258,16 +255,14 @@ class ObjectMask {
 	 * @param {ObjectMask|Object} mask2...
 	 * @return {ObjectMask} - The result of ANDing together the component masks
 	 */
-	static andMasks() {
-		var resultMask = true;
-		var curArg, argIdx;
-		for (argIdx = 0; argIdx < arguments.length; argIdx++) {
-			curArg = arguments[argIdx];
+	static andMasks(...masks: any[]): ObjectMask {
+		let resultMask = true;
+		for (let curArg of masks) {
 			if (ObjectMask.isObjectMask(curArg)) {
 				curArg = curArg.toObject();
 			}
 			resultMask = andMask(resultMask, curArg);
-			if (resultMask === false) return false;
+			if (resultMask === false) return new ObjectMask(false);
 		}
 		return new ObjectMask(resultMask || false);
 	}
@@ -279,7 +274,7 @@ class ObjectMask {
 	 * @method validate
 	 * @return {Boolean} - Whether or not the mask is strictly valid
 	 */
-	validate() {
+	validate(): boolean {
 		return valWhitelist(this.mask);
 	}
 
@@ -290,8 +285,8 @@ class ObjectMask {
 	 * @param {Object} obj - The object to check against
 	 * @return {String[]} - Paths to fields that are restricted by the mask
 	 */
-	getMaskedOutFields(obj) {
-		var maskedOut = [];
+	getMaskedOutFields(obj: any): string[] {
+		let maskedOut = [];
 		this.filterObject(obj, (path) => { maskedOut.push(path); });
 		return maskedOut;
 	}
@@ -306,10 +301,9 @@ class ObjectMask {
 	 * @param {String} maskedOutHook.path - Path of the masked out field
 	 * @return {Object} - The result
 	 */
-	filterDottedObject(dottedObj, maskedOutHook) {
-		var resultObj = {};
-		var key;
-		for (key in dottedObj) {
+	filterDottedObject(dottedObj: { [dottedPath: string]: any }, maskedOutHook: (path: string) => void = null): any {
+		let resultObj = {};
+		for (let key in dottedObj) {
 			if (!this.checkPath(key)) {
 				if (maskedOutHook) {
 					maskedOutHook(key);
@@ -329,8 +323,8 @@ class ObjectMask {
 	 * @param {Object} obj - The object to check against
 	 * @return {String[]} - Paths to fields that are restricted by the mask
 	 */
-	getDottedMaskedOutFields(obj) {
-		var maskedOut = [];
+	getDottedMaskedOutFields(obj: any): string[] {
+		let maskedOut = [];
 		this.filterDottedObject(obj, (path) => { maskedOut.push(path); });
 		return maskedOut;
 	}
@@ -343,7 +337,7 @@ class ObjectMask {
 	 * @param {Object} obj
 	 * @return {Boolean}
 	 */
-	checkFields(obj) {
+	checkFields(obj: any): boolean {
 		return this.getMaskedOutFields(obj).length === 0;
 	}
 
@@ -355,7 +349,7 @@ class ObjectMask {
 	 * @param {Object} dottedObj - Mapping from dot-separated paths to values
 	 * @return {Boolean}
 	 */
-	checkDottedFields(dottedObj) {
+	checkDottedFields(dottedObj: { [dottedPath: string]: any }): boolean {
 		return Object.keys(dottedObj).every((path) => this.checkPath(path));
 	}
 
@@ -367,13 +361,13 @@ class ObjectMask {
 	 * @return {Function} - A function(obj) that is the equivalent of calling filterObject()
 	 * on obj
 	 */
-	createFilterFunc() {
-		return (obj) => this.filterObject(obj);
+	createFilterFunc(): (obj: any) => any {
+		return (obj: any) => this.filterObject(obj);
 	}
 }
 
-function underscorizeArrays(mask) {
-	var subpath, submask;
+function underscorizeArrays(mask: any): any {
+	let subpath: string, submask: any;
 	for (subpath in mask) {
 		submask = mask[subpath];
 		if (_.isArray(submask)) {
@@ -386,22 +380,21 @@ function underscorizeArrays(mask) {
 }
 
 // shallowly removes falsey keys if obj does not have a wildcard
-function sanitizeFalsies(obj) {
-	var key;
+function sanitizeFalsies(obj: any): any {
 	if (!obj._) {
 		delete obj._;
-		for (key in obj) {
+		for (let key in obj) {
 			if (obj[key] === false) delete obj[key];
 		}
 	}
 	return obj;
 }
 
-function invert(mask) {
+function invert(mask: any): any {
 	// base case:
 	if (objtools.isScalar(mask)) return !mask;
 
-	var key, result = {};
+	let key: string, result: any = {};
 	for (key in mask) result[key] = invert(mask[key]);
 	if (!('_' in result)) {
 		result._ = true;
@@ -412,7 +405,7 @@ function invert(mask) {
 }
 
 function subtract(a, b) {
-	var key;
+	let key;
 	// base cases:
 	if (a === true) return invert(b);
 	if (a === false) return false;
@@ -421,10 +414,7 @@ function subtract(a, b) {
 	if (b === true || _.isEqual(a, b)) return false;
 
 	if (objtools.isScalar(a) || objtools.isScalar(b)) {
-		throw new XError(XError.INVALID_ARGUMENT, {
-			message: 'Cannot subtract non-boolean scalars',
-			data: { a: a, b: b }
-		});
+		throw new Error('Cannot subtract non-boolean scalars');
 	}
 
 	if ('_' in b) {
@@ -449,7 +439,7 @@ function subtract(a, b) {
 }
 
 function filterDeep(obj, mask, path, maskedOutHook) {
-	var resultIsArray, resultObj, key, maskVal, resultVal;
+	let resultIsArray, resultObj, key, maskVal, resultVal;
 	if (mask === true) return obj;
 	if (mask && !objtools.isScalar(obj) && !objtools.isScalar(mask)) {
 		resultIsArray = _.isArray(obj);
@@ -476,7 +466,7 @@ function addMask(resultMask, newMask) {
 	if (objtools.isScalar(newMask)) return resultMask;
 	if (objtools.isScalar(resultMask)) return objtools.deepCopy(newMask);
 
-	var key;
+	let key;
 	// If there are keys that exist in result but not in the newMask,
 	// and the result mask has a _ key (wildcard), combine
 	// the wildcard mask with the new mask, because in the existing
@@ -522,7 +512,7 @@ function andMask(resultMask, newMask) {
 	if (newMask === true) return resultMask;
 	if (objtools.isScalar(resultMask) || objtools.isScalar(newMask)) return false;
 
-	var key;
+	let key;
 	// Handle keys that exist in both masks, excepting _
 	for (key in newMask) {
 		if (key !== '_' && key in resultMask) {
@@ -557,7 +547,7 @@ function andMask(resultMask, newMask) {
 }
 
 function valWhitelist(whitelist) {
-	var key;
+	let key;
 	if (whitelist !== true && whitelist !== false && objtools.isScalar(whitelist)) return false;
 	if (typeof whitelist === 'object') {
 		for (key in whitelist) {
@@ -567,4 +557,3 @@ function valWhitelist(whitelist) {
 	return true;
 }
 
-module.exports = ObjectMask;

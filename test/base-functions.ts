@@ -2,9 +2,9 @@
 // Licensed under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
-const expect = require('chai').expect;
-const _ = require('lodash');
-const objtools = require('../lib');
+import { expect } from 'chai';
+import _ from 'lodash';
+import * as objtools from '../lib/index.js';
 
 class TestClass {
 	testMethod() {
@@ -297,6 +297,7 @@ describe('Base Functions', function() {
 		});
 		it('setPath should create parent objects as necessary', function() {
 			objtools.setPath(obj1, 'bar.biz.baz.buz', 10);
+			// @ts-ignore
 			expect(obj1.bar).to.deep.equal({ biz: { baz: { buz: 10 } } });
 		});
 		it('setPath should overwrite parent object on conflicting type', function() {
@@ -326,8 +327,8 @@ describe('Base Functions', function() {
 			expect(actual).to.deep.equal(expected);
 		});
 		it('should provide the correct `customizer` arguments', function() {
-			let object = { 'a': 1 };
-			let source = { 'a': 2 };
+			let object: any = { 'a': 1 };
+			let source: any = { 'a': 2 };
 			let args, expected = [ 1, 2, 'a', _.cloneDeep(object), _.cloneDeep(source) ];
 			objtools.merge(_.cloneDeep(object), _.cloneDeep(source), function() {
 				args = _.toArray(_.cloneDeep(arguments));
@@ -395,6 +396,7 @@ describe('Base Functions', function() {
 			function Foo() {}
 			const source = { 'a': 1 };
 			expect(objtools.merge(Foo, source)=== Foo);
+			// @ts-ignore
 			expect(Foo.a === 1);
 		});
 		it('should override primitive `object` values', function() {
@@ -583,7 +585,7 @@ describe('Base Functions', function() {
 			expect(sameDates).to.deep.equal([]);
 		});
 		it('diffs two scalars', function() {
-			expect(objtools.dottedDiff(aScalar, anotherScalar)).to.equal('');
+			expect(objtools.dottedDiff(aScalar, anotherScalar)).to.deep.equal(['']);
 		});
 		it('handles deep equal values', function() {
 			expect(objtools.dottedDiff(obj1, _.cloneDeep(obj1))).to.deep.equal([]);

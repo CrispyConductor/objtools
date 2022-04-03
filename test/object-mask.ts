@@ -2,12 +2,11 @@
 // Licensed under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
-let { expect } = require('chai');
-let XError = require('xerror');
-let _ = require('lodash');
+import { expect } from 'chai';
+import _ from 'lodash';
 
-let objtools = require('../lib');
-let ObjectMask = objtools.ObjectMask;
+import * as objtools from '../lib/index.js';
+const ObjectMask = objtools.ObjectMask;
 
 describe('ObjectMask', function() {
 
@@ -21,7 +20,7 @@ describe('ObjectMask', function() {
 
 	describe('isObjectMask()', function() {
 		it('returns true for ObjectMasks', function() {
-			expect(ObjectMask.isObjectMask(new ObjectMask())).to.be.true;
+			expect(ObjectMask.isObjectMask(new ObjectMask({}))).to.be.true;
 		});
 		it('returns false for non-ObjectMasks', function() {
 			expect(ObjectMask.isObjectMask({ mask: {}, isObjectMask: true })).to.be.false;
@@ -136,8 +135,8 @@ describe('ObjectMask', function() {
 			expect(difference.filterObject(obj)).to.deep.equal({});
 		});
 		it('throws on attempt to subtract with scalars', function() {
-			expect(() => ObjectMask.subtractMasks(3, { _: { foo: true } })).to.throw(XError);
-			expect(() => ObjectMask.subtractMasks({ _: { foo: true } }, 3)).to.throw(XError);
+			expect(() => ObjectMask.subtractMasks(3, { _: { foo: true } })).to.throw(Error);
+			expect(() => ObjectMask.subtractMasks({ _: { foo: true } }, 3)).to.throw(Error);
 		});
 	});
 
@@ -232,8 +231,8 @@ describe('ObjectMask', function() {
 			expect(difference.filterObject(obj)).to.deep.equal({});
 		});
 		it('throws on attempt to subtract with scalars', function() {
-			expect(() => ObjectMask.subtractMasks(3, { _: { foo: true } })).to.throw(XError);
-			expect(() => ObjectMask.subtractMasks({ _: { foo: true } }, 3)).to.throw(XError);
+			expect(() => ObjectMask.subtractMasks(3, { _: { foo: true } })).to.throw(Error);
+			expect(() => ObjectMask.subtractMasks({ _: { foo: true } }, 3)).to.throw(Error);
 		});
 	});
 
@@ -590,7 +589,7 @@ describe('ObjectMask', function() {
 		it('throws on attempt to remove wildcard', function() {
 			let orig = new ObjectMask({ _: [ true ] });
 			expect(() => orig.removeField('_')).to.throw();
-			expect(() => orig.removeField('foo._')).to.throw(XError);
+			expect(() => orig.removeField('foo._')).to.throw(Error);
 		});
 	});
 });

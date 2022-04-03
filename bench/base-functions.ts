@@ -2,9 +2,10 @@
 // Licensed under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
-let { benchset, compare, bench } = require('spectrophotometer');
-let objtools = require('../lib');
-let _ = require('lodash');
+import spectrophotometer from 'spectrophotometer';
+let { benchset, compare, bench } = spectrophotometer;
+import * as objtools from '../lib/index.js';
+import _ from 'lodash';
 
 benchset('#isPlainObject', function() {
 
@@ -294,7 +295,7 @@ benchset('Diff Functions', function() {
 	});
 
 	bench('dottedDiff', function() {
-		objtools.dottedDiff(obj1. obj2);
+		objtools.dottedDiff(obj1, obj2);
 	});
 });
 
