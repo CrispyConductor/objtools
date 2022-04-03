@@ -5,7 +5,8 @@
     "outDir": "./dist",
     "moduleResolution": "node",
     "sourceMap": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "declaration": true
   },
   "include": [
     "./lib",
